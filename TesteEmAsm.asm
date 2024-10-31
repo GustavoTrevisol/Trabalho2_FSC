@@ -1,17 +1,21 @@
 .data
 msg_bemvindo: .ascii "Bem-vindo ao Blackjack!\n\0"
 msg_sua_mao: .ascii "Sua mao: \0"
-msg_dealer_mao: .ascii "Mao do Dealer: \0"
+msg_dealer_mao: .ascii " Mao do Dealer: \0"
 msg_hit_stand: .ascii "\nDigite 1 para Hit ou 2 para Stand: \0"
 msg_vitoria: .ascii " Voce venceu!\n\0"
 msg_derrota: .ascii " Dealer venceu.\n\0"
-msg_empate: .ascii "Empate.\n\0"
+msg_empate: .ascii " Empate.\n\0"
 msg_fim: .ascii "Obrigado por jogar!\n\0"
-msg_bust: .ascii "Voce estourou com um total de: \0"  # Mensagem de estourar
+msg_bust: .ascii " Voce estourou com um total de: \0"  # Mensagem de estourar
+msg_dealer_bust: .ascii " O dealer estourou com um total de: \0"  # Mensagem do dealer estourar
+msg_novo_jogo: .ascii "\nDigite 1 para jogar novamente ou 2 para sair: \0"
 
 .text
 .globl main
 main:
+    # Loop principal do jogo
+loop_jogo:
     # Exibe mensagem de boas-vindas
     li a7, 4
     la a0, msg_bemvindo
@@ -87,14 +91,42 @@ jogada_dealer:
     mv a0, t2
     mv a1, t3
     jal ra, calcularValorMao
-    mv s2, a0            # Valor total da mão do dealer
+    mv s2, a0            # Valor total da mão do dealer em s2
 
-    # Exibe valor da mão do dealer
+    # Lógica do dealer
+dealer_hit:
+    li t5, 17            # Limite para o dealer
+    blt s2, t5, dealer_pedir # Se a soma do dealer < 17, pede mais
+
+    # Exibe valor da mão do dealer uma vez
     la a0, msg_dealer_mao
     li a7, 4
     ecall
-    mv a0, s2
+    mv a0, s2            # Passa o valor total da mão do dealer para impressão
     jal ra, print_int
+
+    j resultado          # Se >= 17, vai para verificação de resultado
+
+dealer_pedir:
+    # Gera nova carta para o dealer
+    jal ra, gerarCarta
+    add s2, s2, a0       # Soma a nova carta ao total em s2
+
+    # Verifica se a soma do dealer excede 21
+    li t6, 21            # Limite máximo do dealer
+    bgt s2, t6, dealer_bustou  # Se exceder 21, vai para mensagem de estourar
+
+    j dealer_hit         # Volta a verificar a soma do dealer
+
+dealer_bustou:
+    # O dealer estourou, exibe a mensagem e o total
+    la a0, msg_dealer_bust
+    li a7, 4
+    ecall
+    mv a0, s2            # Passa o total para impressão
+    jal ra, print_int
+
+    j vitoria            # O jogador venceu
 
 resultado:
     # Verifica quem venceu
@@ -106,18 +138,38 @@ vitoria:
     la a0, msg_vitoria
     li a7, 4
     ecall
-    j fim
+    j opcao_novo_jogo
 
 derrota:
     la a0, msg_derrota
     li a7, 4
     ecall
-    j fim
+    j opcao_novo_jogo
 
 empate:
     la a0, msg_empate
     li a7, 4
     ecall
+    j opcao_novo_jogo
+
+opcao_novo_jogo:
+    # Pergunta ao jogador se deseja jogar novamente
+    la a0, msg_novo_jogo
+    li a7, 4
+    ecall
+
+    # Lê a opção do jogador
+    li a7, 5
+    ecall
+    mv s3, a0            # Salva escolha do jogador
+
+    # Se escolha for "Jogar Novamente" (1)
+    li t4, 1
+    beq s3, t4, loop_jogo
+
+    # Se escolha for "Sair" (2), vai para o fim
+    li t4, 2
+    beq s3, t4, fim
 
 fim:
     la a0, msg_fim
@@ -132,7 +184,13 @@ gerarCarta:
     li a1, 13           # Define limite superior (13)
     li a7, 42           # Syscall para gerar número aleatório
     ecall               # Chamada de sistema
-    jr ra               # Retorna com valor em a0
+    addi a0, a0, 1      # Ajusta para garantir que o valor gerado está entre 1 e 13
+    blt a0, zero, set_default # Verifica se o resultado é negativo
+    jr ra               # Retorna com o valor em a0
+
+set_default:
+    li a0, 1            # Define 1 como valor padrão em caso de erro
+    jr ra
 
 # Função para calcular o valor da mão inicial com duas cartas
 calcularValorMao:
