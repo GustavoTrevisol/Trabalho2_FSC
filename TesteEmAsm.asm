@@ -6,7 +6,7 @@ msg_hit_stand: .ascii "\nDigite 1 para Hit ou 2 para Stand: \0"
 msg_vitoria: .ascii " Voce venceu!\n\0"
 msg_derrota: .ascii " Dealer venceu.\n\0"
 msg_empate: .ascii " Empate.\n\0"
-msg_fim: .ascii "Obrigado por jogar!\n\0"
+msg_fim: .ascii " Obrigado por jogar!\n\0"
 msg_bust: .ascii " Voce estourou com um total de: \0"  # Mensagem de estourar
 msg_dealer_bust: .ascii " O dealer estourou com um total de: \0"  # Mensagem do dealer estourar
 msg_novo_jogo: .ascii "\nDigite 1 para jogar novamente ou 2 para sair: \0"
